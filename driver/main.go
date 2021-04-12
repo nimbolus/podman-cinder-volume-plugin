@@ -118,12 +118,14 @@ func main() {
 		}
 	}
 
+	volumePrefix := os.Getenv("VOLUME_PREFIX")
+
 	authOpts, err := openstack.AuthOptionsFromEnv()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	d, err := NewDriver(authOpts, region, defaultSize)
+	d, err := NewDriver(authOpts, region, defaultSize, volumePrefix)
 	if err != nil {
 		logrus.Fatal(fmt.Errorf("Could not create CinderDriver: %v.", err))
 	}

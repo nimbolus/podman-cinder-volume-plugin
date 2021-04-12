@@ -51,6 +51,7 @@ Here's the list of env vars supported by this plugin:
 | OS_PROJECT_NAME                  |               | See [1].                                                                          |
 | OS_REGION_NAME                   |               | Name of the OpenStack region where Compute & Block Storage resources are located. |
 | DEFAULT_SIZE                     | `20`          | Default volume size in GB.                                                        |
+| VOLUME_PREFIX                    |               | Name prefix of volumes managed by this plugin.                                    |
 | LOG_LEVEL                        | `debug`       | Log level (either: trace, debug, info, warn, error, fatal, panic).                |
 | DEBUG                            |               | Enable /pprof/trace endpoint when the value is not empty.                         |
 

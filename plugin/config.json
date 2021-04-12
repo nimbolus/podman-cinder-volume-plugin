@@ -99,6 +99,12 @@
             "value": "20",
             "settable": ["value"]
         },
+        {
+            "name": "VOLUME_PREFIX",
+            "description": "Name prefix of volumes managed by this plugin.",
+            "value": "",
+            "settable": ["value"]
+        },
 		{
 			"name": "LOG_LEVEL",
 			"description": "Log level of this plugin (either: trace, debug, info, warn, error, fatal, panic).",

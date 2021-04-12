@@ -33,9 +33,10 @@ type CinderDriver struct {
 	computeClient *gophercloud.ServiceClient
 	defaultSize   int
 	serverID      string
+	volumePrefix  string
 }
 
-func NewDriver(authOpts gophercloud.AuthOptions, region string, defaultSize int) (*CinderDriver, error) {
+func NewDriver(authOpts gophercloud.AuthOptions, region string, defaultSize int, volumePrefix string) (*CinderDriver, error) {
 	provider, err := openstack.AuthenticatedClient(authOpts)
 	if err != nil {
 		return nil, fmt.Errorf("could not create the provider client: %v", err)
@@ -65,6 +66,7 @@ func NewDriver(authOpts gophercloud.AuthOptions, region string, defaultSize int)
 		computeClient: computeClient,
 		defaultSize:   defaultSize,
 		serverID:      serverID,
+		volumePrefix:  volumePrefix,
 	}
 
 	return d, nil
@@ -72,6 +74,11 @@ func NewDriver(authOpts gophercloud.AuthOptions, region string, defaultSize int)
 
 func (d *CinderDriver) Create(logger *logrus.Entry, req VolumeCreateReq) VolumeCreateResp {
 	resp := VolumeCreateResp{}
+
+	if !strings.HasPrefix(req.Name, d.volumePrefix) {
+		resp.Err = fmt.Sprintf("volume name should be prefixed with %s", d.volumePrefix)
+		return resp
+	}
 
 	size := d.defaultSize
 	if req.Opts.Size != "" {
@@ -627,7 +634,9 @@ func (d *CinderDriver) listVolumes() ([]volumes.Volume, error) {
 	}
 
 	for _, v := range list {
-		vols = append(vols, v)
+		if strings.HasPrefix(v.Name, d.volumePrefix) {
+			vols = append(vols, v)
+		}
 	}
 
 	return vols, err
