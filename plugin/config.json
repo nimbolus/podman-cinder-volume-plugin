@@ -1,0 +1,115 @@
+{
+    "Description": "Volume driver for OpenStack Cinder",
+    "Documentation": "https://github.com/akerouanton/cinder-volume-driver",
+	"Entrypoint": ["/cinder"],
+    "Linux": {
+        "AllowAllDevices": true,
+        "Capabilities": ["CAP_SYS_ADMIN"],
+        "Devices": null
+    },
+    "Mounts": [
+        {
+            "Source": "/dev",
+            "Destination": "/dev",
+            "Type": "bind",
+            "Options": ["rbind"]
+        },
+        {
+            "Source": "/run/udev",
+            "Destination": "/run/udev",
+            "Type": "bind",
+            "Options": ["rbind"]
+        }
+    ],
+    "Network": {
+        "Type": "host"
+    },
+    "User": {},
+    "WorkDir": "",
+    "Interface": {
+        "Socket": "cinder.sock",
+        "Types": [
+            "docker.volumedriver/1.0"
+        ]
+    },
+    "PropagatedMount": "/var/lib/cinder",
+	"Env": [
+        {
+            "name": "OS_AUTH_URL",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_USERNAME",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_USERID",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_PASSWORD",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_PASSCODE",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_TENANT_ID",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_TENANT_NAME",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_DOMAIN_ID",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_DOMAIN_NAME",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_APPLICATION_CREDENTIAL_ID",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_APPLICATION_CREDENTIAL_NAME",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_APPLICATION_CREDENTIAL_SECRET",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_PROJECT_ID",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_PROJECT_NAME",
+            "settable": ["value"]
+        },
+        {
+            "name": "OS_REGION_NAME",
+            "settable": ["value"]
+        },
+        {
+            "name": "DEFAULT_SIZE",
+            "value": "20",
+            "settable": ["value"]
+        },
+		{
+			"name": "LOG_LEVEL",
+			"description": "Log level of this plugin (either: trace, debug, info, warn, error, fatal, panic).",
+			"value": "info",
+			"settable": ["value"]
+		},
+		{
+			"name": "DEBUG",
+			"description": "Enable /pprof/trace endpoint when the value is not empty.",
+			"value": "",
+			"settable": ["value"]
+		}
+	]
+}

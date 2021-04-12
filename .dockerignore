@@ -1,0 +1,5 @@
+plugin/
+.env
+.env.dist
+Dockerfile.build
+Makefile
