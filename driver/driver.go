@@ -265,7 +265,14 @@ func (d *CinderDriver) Mount(logger *logrus.Entry, req VolumeMountReq) VolumeMou
 		return resp
 	}
 
-	if !fsDetected {
+	// rexray/cinder uses the data subfolder as mountpoint, so we need to do the same to be compatible.
+	datadir := path.Join(mountpoint, "data")
+	if _, err := os.Stat(datadir); err != nil && !os.IsNotExist(err) {
+		resp.Err = fmt.Sprintf("stat %s failed: %v", datadir, err)
+		logger.Error(resp.Err)
+
+		return resp
+	} else if os.IsNotExist(err) {
 		uid, gid, mode, err := getPermsMetadata(vol)
 		if err != nil {
 			resp.Err = err.Error()
@@ -274,15 +281,15 @@ func (d *CinderDriver) Mount(logger *logrus.Entry, req VolumeMountReq) VolumeMou
 			return resp
 		}
 
-		logger.Debugf("Setting the filemode and uid:gid of the root of the volume to: %#o %d:%d.", mode, uid, gid)
+		logger.Debugf("Create the datadir with filemode and perms: %#o %d:%d.", mode, uid, gid)
 
-		if err := os.Chown(mountpoint, uid, gid); err != nil {
+		if err := os.Mkdir(datadir, os.FileMode(mode)); err != nil {
 			resp.Err = err.Error()
 			logger.Error(resp.Err)
 
 			return resp
 		}
-		if err := os.Chmod(mountpoint, os.FileMode(mode)); err != nil {
+		if err := os.Chown(datadir, uid, gid); err != nil {
 			resp.Err = err.Error()
 			logger.Error(resp.Err)
 
@@ -290,7 +297,7 @@ func (d *CinderDriver) Mount(logger *logrus.Entry, req VolumeMountReq) VolumeMou
 		}
 	}
 
-	resp.Mountpoint = mountpoint
+	resp.Mountpoint = datadir
 
 	return resp
 }
@@ -466,7 +473,7 @@ func (d *CinderDriver) Path(logger *logrus.Entry, req VolumePathReq) VolumePathR
 		return resp
 	}
 
-	resp.Mountpoint = mountpoint
+	resp.Mountpoint = path.Join(mountpoint, "data")
 	return resp
 }
 
@@ -579,7 +586,7 @@ func (d *CinderDriver) Get(logger *logrus.Entry, req VolumeGetReq) VolumeGetResp
 
 		return resp
 	} else if ok {
-		resp.Volume.Mountpoint = mountpoint
+		resp.Volume.Mountpoint = path.Join(mountpoint, "data")
 	}
 
 	return resp
@@ -611,7 +618,7 @@ func (d *CinderDriver) List(logger *logrus.Entry) VolumeListResp {
 
 			return resp
 		} else if ok {
-			v.Mountpoint = mountpoint
+			v.Mountpoint = path.Join(mountpoint, "data")
 		}
 
 		resp.Volumes = append(resp.Volumes, v)
