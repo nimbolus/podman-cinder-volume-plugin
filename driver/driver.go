@@ -137,6 +137,32 @@ func (d *CinderDriver) Remove(logger *logrus.Entry, req VolumeRemoveReq) VolumeR
 		return resp
 	}
 
+	// Unmount() doesn't detach the volume from the server to make it faster to
+	// mount it again later. As such, if the volume isn't mounted but is attached,
+	// we have to detach it first.
+	mountpoint := path.Join(propagatedMount, vol.ID)
+	mounted, err := isMounted(mountpoint)
+	if err != nil {
+		resp.Err = fmt.Sprintf("checking if volume is still mounted: %v", err)
+		logger.Error(resp.Err)
+
+		return resp
+	} else if err == nil && mounted {
+		resp.Err = "volume is still mounted"
+		logger.Error(resp.Err)
+
+		return resp
+	}
+
+	if len(vol.Attachments) > 0 {
+		if err := d.detachVolume(logger, vol, false, true); err != nil {
+			resp.Err = fmt.Sprintf("detaching volume from current server: %v", err)
+			logger.Error(resp.Err)
+
+			return resp
+		}
+	}
+
 	osResp := volumes.Delete(d.storageClient, vol.ID, nil)
 	if err := osResp.ExtractErr(); err != nil {
 		resp.Err = fmt.Sprintf("failed to delete volume: %v", err)
@@ -217,7 +243,7 @@ func (d *CinderDriver) Mount(logger *logrus.Entry, req VolumeMountReq) VolumeMou
 	}
 
 	if vol.Multiattach == false && len(vol.Attachments) > 0 {
-		if err := d.detachVolume(logger, vol, true); err != nil {
+		if err := d.detachVolume(logger, vol, true, false); err != nil {
 			resp.Err = err.Error()
 			logger.Error(resp.Err)
 
@@ -237,8 +263,7 @@ func (d *CinderDriver) Mount(logger *logrus.Entry, req VolumeMountReq) VolumeMou
 
 	logger = logger.WithField("Device", dev)
 
-	fsDetected, err := isExt4(dev)
-	if err != nil {
+	if fsDetected, err := isExt4(dev); err != nil {
 		resp.Err = err.Error()
 		logger.Error(resp.Err)
 
@@ -257,12 +282,19 @@ func (d *CinderDriver) Mount(logger *logrus.Entry, req VolumeMountReq) VolumeMou
 	mountpoint := path.Join(propagatedMount, vol.ID)
 	logger = logger.WithField("mountpoint", mountpoint)
 
-	logger.Debugf("Mounting the filesystem...", mountpoint)
-	if err := d.mount(dev, mountpoint); err != nil {
-		resp.Err = fmt.Sprintf("failed to mount volume %s: %v", req.Name, err)
+	if mounted, err := isMounted(mountpoint); err != nil {
+		resp.Err = fmt.Sprintf("checking if dev is already mounted: %v", err)
 		logger.Error(resp.Err)
 
 		return resp
+	} else if !mounted {
+		logger.Debug("Mounting the filesystem...")
+		if err := d.mount(dev, mountpoint); err != nil {
+			resp.Err = fmt.Sprintf("failed to mount volume %s: %v", req.Name, err)
+			logger.Error(resp.Err)
+
+			return resp
+		}
 	}
 
 	// rexray/cinder uses the data subfolder as mountpoint, so we need to do the same to be compatible.
@@ -316,19 +348,27 @@ func (d *CinderDriver) attachVolume(logger *logrus.Entry, vol volumes.Volume) (s
 
 	logger.Debugf("Volume %s has been attached to server %s.", vol.Name, d.serverID)
 
-	// The value in volumeAttach.Device is guessed by OpenStack based on the number of volumes attached
+	// The value in att.Device is guessed by OpenStack based on the number of volumes attached
 	// to the instance. When two volumes are attached at the same time, OpenStack might assign a letter
 	// to the volume that doesn't match what Linux assigns. For instance, OpenStack guesses vol1 gets sdb
 	// and vol2 gets sdc whereas Linux actually assigns sdc to vol1 and sdb to vol2. Another edge case: udev
 	// might rename the device based on some rules, making OpenStack guesses wrong.
 	// The only way to actually know what device name is assigned to a Block Storage disk is to read the serial
 	// number of disks attached to the instance and find the one matching the UUID of the Block Storage volume.
+	//
+	// The plugin might try to read the udev file for the newly attached disk before the kernel make it available,
+	// so better wait a bit before reading it.
+	time.Sleep(200 * time.Millisecond)
+
 	return findDevWithSerial(att.VolumeID)
 }
 
-func (d *CinderDriver) detachVolume(logger *logrus.Entry, vol volumes.Volume, skipCurrent bool) error {
+func (d *CinderDriver) detachVolume(logger *logrus.Entry, vol volumes.Volume, skipCurrent, onlyCurrent bool) error {
 	for _, att := range vol.Attachments {
 		if skipCurrent && att.ServerID == d.serverID {
+			continue
+		}
+		if onlyCurrent && att.ServerID != d.serverID {
 			continue
 		}
 
