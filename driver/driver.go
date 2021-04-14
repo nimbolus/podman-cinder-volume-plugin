@@ -228,7 +228,7 @@ func (d *CinderDriver) Mount(logger *logrus.Entry, req VolumeMountReq) VolumeMou
 	if !alreadyAttached {
 		dev, err = d.attachVolume(logger, vol)
 		if err != nil {
-			resp.Err = fmt.Sprintf("failed to mount volume %s: %v", req.Name, err)
+			resp.Err = err.Error()
 			logger.Error(resp.Err)
 
 			return resp

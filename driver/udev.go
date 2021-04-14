@@ -18,7 +18,7 @@ var (
 func findDevWithSerial(expectedSerial string) (string, error) {
 	entries, err := ioutil.ReadDir("/sys/class/block")
 	if err != nil {
-		return "", fmt.Errorf("could not read dir /sys/class/block: %v", err)
+		return "", fmt.Errorf("could not find dev with serial: %v", err)
 	}
 
 	devices := make([]string, 0)
@@ -28,13 +28,13 @@ func findDevWithSerial(expectedSerial string) (string, error) {
 		var major, minor string
 		major, minor, err = readUevent(sysname)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("could not find dev with serial: %v", err)
 		}
 
 		var devSerial string
 		devSerial, err = readUdevData(major, minor)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("could not find dev with serial: %v", err)
 		}
 
 		if devSerial == expectedSerial {
@@ -57,7 +57,7 @@ func readUevent(sysname string) (string, string, error) {
 
 	f, err := os.Open(uevent)
 	if err != nil {
-		return "", "", fmt.Errorf("could not open %s: %v", uevent, err)
+		return "", "", err
 	}
 	defer f.Close()
 
@@ -89,7 +89,7 @@ func readUdevData(major, minor string) (string, error) {
 
 	f, err := os.Open(udev)
 	if err != nil {
-		return "", fmt.Errorf("could not open %s: %v", udev, err)
+		return "", err
 	}
 	defer f.Close()
 
