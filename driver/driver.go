@@ -420,7 +420,7 @@ func getPermsMetadata(vol volumes.Volume) (int, int, int, error) {
 //   * https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Layout
 //   * https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#The_Super_Block
 var EXT4_SUPER_MAGIC_OFFSET = 1024 + 0x38
-var EXT4_SUPER_MAGIC = []byte("\x53\xFE")
+var EXT4_SUPER_MAGIC = []byte("\x53\xEF")
 
 func isExt4(dev string) (bool, error) {
 	f, err := os.Open(dev)
