@@ -124,6 +124,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	authOpts.AllowReauth = true
 
 	d, err := NewDriver(authOpts, region, defaultSize, volumePrefix)
 	if err != nil {
