@@ -98,10 +98,3 @@ volumes:
       size: 40
       source_snapshot: "<snapshot-uuid>"
 ```
-
-## How to work on this?
-
-You can create a new `devel` plugin release with `make plugin` and you can
-install it with `make install` (you have to set env vars in .env file first).
-
-To release a new version you have to use: `PLUGIN_VERSION=vX.Y make release`.
