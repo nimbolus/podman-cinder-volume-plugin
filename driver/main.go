@@ -161,6 +161,9 @@ func setUpHandlers(h *sdk.Handler, d *CinderDriver) {
 		logger = logger.WithField("Req", fmt.Sprintf("%+v", req))
 
 		resp := d.Create(logger, req)
+		if resp.Err != "" {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 
@@ -178,6 +181,9 @@ func setUpHandlers(h *sdk.Handler, d *CinderDriver) {
 		logger = logger.WithField("Req", fmt.Sprintf("%+v", req))
 
 		resp := d.Remove(logger, req)
+		if resp.Err != "" {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 
@@ -195,6 +201,9 @@ func setUpHandlers(h *sdk.Handler, d *CinderDriver) {
 		logger = logger.WithField("Req", fmt.Sprintf("%+v", req))
 
 		resp := d.Mount(logger, req)
+		if resp.Err != "" {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 
@@ -212,6 +221,9 @@ func setUpHandlers(h *sdk.Handler, d *CinderDriver) {
 		logger = logger.WithField("Req", fmt.Sprintf("%+v", req))
 
 		resp := d.Path(logger, req)
+		if resp.Err != "" {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 
@@ -229,6 +241,9 @@ func setUpHandlers(h *sdk.Handler, d *CinderDriver) {
 		logger = logger.WithField("Req", fmt.Sprintf("%+v", req))
 
 		resp := d.Unmount(logger, req)
+		if resp.Err != "" {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 
@@ -246,6 +261,9 @@ func setUpHandlers(h *sdk.Handler, d *CinderDriver) {
 		logger = logger.WithField("Req", fmt.Sprintf("%+v", req))
 
 		resp := d.Get(logger, req)
+		if resp.Err != "" {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 
@@ -254,6 +272,9 @@ func setUpHandlers(h *sdk.Handler, d *CinderDriver) {
 		logger.Debug("New request received")
 
 		resp := d.List(logger)
+		if resp.Err != "" {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 

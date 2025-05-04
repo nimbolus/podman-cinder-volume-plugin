@@ -1,10 +1,14 @@
 {
     "Description": "Volume driver for OpenStack Cinder",
     "Documentation": "https://github.com/akerouanton/cinder-volume-driver",
-	"Entrypoint": ["/cinder"],
+    "Entrypoint": [
+        "/cinder"
+    ],
     "Linux": {
         "AllowAllDevices": true,
-        "Capabilities": ["CAP_SYS_ADMIN"],
+        "Capabilities": [
+            "CAP_SYS_ADMIN"
+        ],
         "Devices": null
     },
     "Mounts": [
@@ -12,13 +16,17 @@
             "Source": "/dev",
             "Destination": "/dev",
             "Type": "bind",
-            "Options": ["rbind"]
+            "Options": [
+                "rbind"
+            ]
         },
         {
             "Source": "/run/udev",
             "Destination": "/run/udev",
             "Type": "bind",
-            "Options": ["rbind"]
+            "Options": [
+                "rbind"
+            ]
         }
     ],
     "Network": {
@@ -33,89 +41,127 @@
         ]
     },
     "PropagatedMount": "/var/lib/cinder",
-	"Env": [
+    "Env": [
         {
             "name": "OS_AUTH_URL",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_USERNAME",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_USERID",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_PASSWORD",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_PASSCODE",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_TENANT_ID",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_TENANT_NAME",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_DOMAIN_ID",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_DOMAIN_NAME",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_APPLICATION_CREDENTIAL_ID",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_APPLICATION_CREDENTIAL_NAME",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_APPLICATION_CREDENTIAL_SECRET",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_PROJECT_ID",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_PROJECT_NAME",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "OS_REGION_NAME",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "DEFAULT_SIZE",
             "value": "20",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
         {
             "name": "VOLUME_PREFIX",
             "description": "Name prefix of volumes managed by this plugin.",
             "value": "",
-            "settable": ["value"]
+            "settable": [
+                "value"
+            ]
         },
-		{
-			"name": "LOG_LEVEL",
-			"description": "Log level of this plugin (either: trace, debug, info, warn, error, fatal, panic).",
-			"value": "info",
-			"settable": ["value"]
-		},
-		{
-			"name": "DEBUG",
-			"description": "Enable /pprof/trace endpoint when the value is not empty.",
-			"value": "",
-			"settable": ["value"]
-		}
-	]
+        {
+            "name": "LOG_LEVEL",
+            "description": "Log level of this plugin (either: trace, debug, info, warn, error, fatal, panic).",
+            "value": "info",
+            "settable": [
+                "value"
+            ]
+        },
+        {
+            "name": "DEBUG",
+            "description": "Enable /pprof/trace endpoint when the value is not empty.",
+            "value": "",
+            "settable": [
+                "value"
+            ]
+        }
+    ]
 }

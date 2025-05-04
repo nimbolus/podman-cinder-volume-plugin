@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenStack Cinder volume plugin for Podman
+Before=podman.service
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/podman-cinder-volume-plugin.env
+ExecStart=/usr/local/libexec/podman/cinder
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

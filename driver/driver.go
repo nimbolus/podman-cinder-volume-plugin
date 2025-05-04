@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -342,7 +342,7 @@ func (d *CinderDriver) attachVolume(logger *logrus.Entry, vol volumes.Volume) (s
 		return "", fmt.Errorf("failed to attach volume %s: %v", vol.Name, err)
 	}
 
-	if err := d.waitForVolumeAttachStatus(att.ServerID, att.ID, true, 60*time.Second); err != nil {
+	if err := d.waitForVolumeAttachStatus(att.VolumeID, att.ServerID, true, 60*time.Second); err != nil {
 		return "", fmt.Errorf("error waiting for volume %s to be attached: %v", vol.Name, err)
 	}
 
@@ -377,7 +377,7 @@ func (d *CinderDriver) detachVolume(logger *logrus.Entry, vol volumes.Volume, sk
 			return fmt.Errorf("could not detach volume %s from server %s: %v", vol.Name, att.ServerID, err)
 		}
 
-		if err := d.waitForVolumeAttachStatus(att.ServerID, att.ID, false, 60*time.Second); err != nil {
+		if err := d.waitForVolumeAttachStatus(att.VolumeID, att.ServerID, false, 60*time.Second); err != nil {
 			return fmt.Errorf("error waiting for volume %s to be detached from server %s: %v", vol.Name, att.ServerID, err)
 		}
 
@@ -387,28 +387,29 @@ func (d *CinderDriver) detachVolume(logger *logrus.Entry, vol volumes.Volume, sk
 	return nil
 }
 
-func (d *CinderDriver) waitForVolumeAttachStatus(serverID, attID string, attachmentNeeded bool, timeout time.Duration) error {
-	url := d.computeClient.ServiceURL("servers", serverID, "os-volume_attachments", attID)
-	ropts := &gophercloud.RequestOpts{}
-
-	if attachmentNeeded {
-		ropts.OkCodes = []int{200}
-	} else {
-		ropts.OkCodes = []int{404}
-	}
-
+func (d *CinderDriver) waitForVolumeAttachStatus(volID, serverID string, attachmentNeeded bool, timeout time.Duration) error {
 	return gophercloud.WaitFor(int(timeout.Seconds()), func() (bool, error) {
-		_, err := d.computeClient.Get(url, nil, ropts)
+		vol, err := volumes.Get(d.storageClient, volID).Extract()
 
-		if err == nil {
+		if err != nil {
+			return false, err
+		}
+
+		for _, att := range vol.Attachments {
+			if att.ServerID == serverID {
+				if attachmentNeeded {
+					return true, nil
+				} else {
+					return false, nil
+				}
+			}
+		}
+
+		if !attachmentNeeded {
 			return true, nil
 		}
 
-		if _, ok := err.(*gophercloud.ErrUnexpectedResponseCode); ok {
-			return false, nil
-		}
-
-		return false, err
+		return false, nil
 	})
 }
 
@@ -464,8 +465,8 @@ func getPermsMetadata(vol volumes.Volume) (int, int, int, error) {
 }
 
 // See:
-//   * https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Layout
-//   * https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#The_Super_Block
+//   - https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Layout
+//   - https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#The_Super_Block
 var EXT4_SUPER_MAGIC_OFFSET = 1024 + 0x38
 var EXT4_SUPER_MAGIC = []byte("\x53\xEF")
 
@@ -701,7 +702,7 @@ func getInstanceIDFromMetadataServer() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	metadataBytes, err := ioutil.ReadAll(resp.Body)
+	metadataBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("io error reading metadata: %v", err)
 	}

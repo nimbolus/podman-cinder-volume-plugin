@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine3.13 as builder
+FROM docker.io/golang:1.24-alpine3.21 as builder
 WORKDIR /app
 
 RUN apk add --no-cache gcc git musl-dev
@@ -8,16 +8,16 @@ RUN go mod download
 
 COPY driver/ .
 RUN go build -buildmode pie \
-        -ldflags "\
-            -linkmode external \
-            -extldflags '-static' \
-            -w -s" \
-        -tags 'static_build' \
-        -o cinder
+    -ldflags "\
+    -linkmode external \
+    -extldflags '-static' \
+    -w -s" \
+    -tags 'static_build' \
+    -o cinder
 
 ####################
 
-FROM alpine:3.13
+FROM docker.io/alpine:3.21
 
 RUN apk add --no-cache e2fsprogs
 

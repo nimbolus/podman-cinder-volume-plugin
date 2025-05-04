@@ -1,32 +1,36 @@
-# cinder-volume-driver
+# podman-cinder-volume-plugin
 
-This Docker volume driver makes OpenStack Block Storage volumes (aka Cinder volumes)
-available as Docker volumes.
-
-It was written to circumvent a big issue found in rexray/cinder: it uses the
-device name of volume attachments returned by OpenStack API whereas this field
-is guessed by OpenStack and thus shall not be trusted. From a higher-level,
-this means Block Storage volumes could be mixed up when attached/mounted by
-rexray, leading to the wrong containers writing to the wrong volumes. This has
-been a source of service disruption, data loss, etc... for one of my client.
-
-Since rexray/cinder uses libstorage which is meant to potentially run on another
-server than the one which got volume attached/mounted, the above issue can't be
-easily fixed. Also, the code of libstorage and rexray is a bit complex and
-thus hard to debug.
-
-Moreover, this plugin adds new features not found in rexray/cinder like:
-
-* The ability to specify the uid/gid and filemode to apply to volumes' root folder after formatting them ;
-* The ability to specify the ID of a snapshot to use to create a volume ;
-* And others volume options (see below).
+This Podman volume plugin makes OpenStack Block Storage volumes (aka Cinder volumes) available as Podman volumes.
 
 ## How to install?
 
-You can install this plugin with:
+Download binary:
 
+```sh
+mkdir -p /usr/local/libexec/podman
+podman create --name cinder --pull always ghcr.io/nimbolus/podman-cinder-volume-plugin
+podman cp cinder:/cinder /usr/local/libexec/podman/cinder
+podman rm cinder
 ```
-$ docker plugin install --alias cinder akerouanton/cinder:v0.1 <env-vars>
+
+Create configuration file and start plugin via systemd:
+```sh
+curl -o /etc/podman-cinder-volume-plugin.env https://raw.githubusercontent.com/nimbolus/podman-cinder-volume-plugin/refs/heads/main/dist/config.env
+chmod 0600 /etc/podman-cinder-volume-plugin.env
+
+curl -o /etc/systemd/system/podman-cinder-volume-plugin.service https://raw.githubusercontent.com/nimbolus/podman-cinder-volume-plugin/refs/heads/main/dist/systemd.service
+systemctl daemon-reload
+systemctl enable --now podman-cinder-volume-plugin.service
+```
+
+Finally, register the plugin in `/etc/containers/containers.conf`:
+
+```conf
+[engine]
+volume_plugin_timeout = 30
+
+[engine.volume_plugins]
+cinder = "/var/run/docker/plugins/cinder.sock"
 ```
 
 ## Supported env vars
@@ -34,7 +38,7 @@ $ docker plugin install --alias cinder akerouanton/cinder:v0.1 <env-vars>
 Here's the list of env vars supported by this plugin:
 
 | Name                             | Default Value | Description                                                                       |
-|----------------------------------|---------------|-----------------------------------------------------------------------------------|
+| -------------------------------- | ------------- | --------------------------------------------------------------------------------- |
 | OS_AUTH_URL                      |               | See [1].                                                                          |
 | OS_USERNAME                      |               | See [1].                                                                          |
 | OS_USERID                        |               | See [1].                                                                          |
@@ -52,7 +56,7 @@ Here's the list of env vars supported by this plugin:
 | OS_REGION_NAME                   |               | Name of the OpenStack region where Compute & Block Storage resources are located. |
 | DEFAULT_SIZE                     | `20`          | Default volume size in GB.                                                        |
 | VOLUME_PREFIX                    |               | Name prefix of volumes managed by this plugin.                                    |
-| LOG_LEVEL                        | `debug`       | Log level (either: trace, debug, info, warn, error, fatal, panic).                |
+| LOG_LEVEL                        | `info`        | Log level (either: trace, debug, info, warn, error, fatal, panic).                |
 | DEBUG                            |               | Enable /pprof/trace endpoint when the value is not empty.                         |
 
 [1] https://docs.openstack.org/python-openstackclient/pike/cli/man/openstack.html#environment-variables
@@ -62,7 +66,7 @@ Here's the list of env vars supported by this plugin:
 Here's the list of options you can pass when creating a volume :
 
 | Name                | Default Value                       | Description                                                                             |
-|---------------------|-------------------------------------|-----------------------------------------------------------------------------------------|
+| ------------------- | ----------------------------------- | --------------------------------------------------------------------------------------- |
 | `size`              | The value of `DEFAULT_SIZE` env var | The size of the underlying Block Storage volume.                                        |
 | `availability_zone` | N/A                                 | AZ where the underlying Block Storage volume should be created.                         |
 | `consistency_group` | N/A                                 | See https://docs.openstack.org/cinder/latest/admin/blockstorage-consistency-groups.html |
@@ -77,7 +81,7 @@ Here's the list of options you can pass when creating a volume :
 For instance, if you want to define the size of a volume and the source snapshot the volume should be created from, with Docker CLI:
 
 ```
-$ docker volume create -d cinder -o size=40 -o source_snapshot=<snapshot-uuid> test
+$ podman volume create -d cinder -o size=40 -o source_snapshot=<snapshot-uuid> test
 ```
 
 And with `docker-compose`:
