@@ -102,8 +102,8 @@ func (d *CinderDriver) Create(logger *logrus.Entry, req VolumeCreateReq) VolumeC
 		BackupID:           req.Opts.BackupID,
 		VolumeType:         req.Opts.VolumeType,
 		Metadata: map[string]string{
-			metadataFieldUID:  strconv.Itoa(req.Opts.Uid),
-			metadataFieldGID:  strconv.Itoa(req.Opts.Gid),
+			metadataFieldUID:  req.Opts.Uid,
+			metadataFieldGID:  req.Opts.Gid,
 			metadataFieldMode: req.Opts.Mode,
 		},
 	}

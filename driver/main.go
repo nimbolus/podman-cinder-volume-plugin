@@ -27,8 +27,8 @@ type VolumeCreateOpts struct {
 	SnapshotID         string `json:"source_snapshot"`
 	BackupID           string `json:"source_backup"`
 	VolumeType         string `json:"volume_type"`
-	Uid                int    `json:"uid"`
-	Gid                int    `json:"gid"`
+	Uid                string `json:"uid"`
+	Gid                string `json:"gid"`
 	Mode               string `json:"mode"`
 }
 
