@@ -19,6 +19,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/volumeattach"
+	"github.com/opencontainers/selinux/go-selinux"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
@@ -322,6 +323,17 @@ func (d *CinderDriver) Mount(logger *logrus.Entry, req VolumeMountReq) VolumeMou
 			return resp
 		}
 		if err := os.Chown(datadir, uid, gid); err != nil {
+			resp.Err = err.Error()
+			logger.Error(resp.Err)
+
+			return resp
+		}
+	}
+
+	if selinux.GetEnabled() {
+		logger.Debugf("Set SELinux context for datadir")
+		context := "system_u:object_r:container_file_t:s0"
+		if err := selinux.SetFileLabel(datadir, context); err != nil {
 			resp.Err = err.Error()
 			logger.Error(resp.Err)
 
