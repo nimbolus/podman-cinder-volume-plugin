@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -476,30 +475,43 @@ func getPermsMetadata(vol volumes.Volume) (int, int, int, error) {
 	return uid, gid, mode, nil
 }
 
-// See:
-//   - https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Layout
-//   - https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#The_Super_Block
-var EXT4_SUPER_MAGIC_OFFSET = 1024 + 0x38
-var EXT4_SUPER_MAGIC = []byte("\x53\xEF")
-
 func isExt4(dev string) (bool, error) {
-	f, err := os.Open(dev)
+	output, err := exec.Command("lsblk", "--json", "--output", "NAME,FSTYPE", dev).Output()
 	if err != nil {
-		return false, fmt.Errorf("opening device to read ext4 magic number: %v", err)
-	}
-	defer f.Close()
-
-	buf := make([]byte, len(EXT4_SUPER_MAGIC))
-	l, err := f.ReadAt(buf, int64(EXT4_SUPER_MAGIC_OFFSET))
-	if err != nil {
-		return false, fmt.Errorf("reading ext4 magic number: %v", err)
+		return false, fmt.Errorf("listing block devices failed: %v", err)
 	}
 
-	if l != len(EXT4_SUPER_MAGIC) {
-		return false, errors.New("reading ext4 magic number: could not read enough bytes")
+	type device struct {
+		Name     string   `json:"name"`
+		FSType   string   `json:"fstype,omitempty"`
+		Children []device `json:"children,omitempty"`
 	}
 
-	return bytes.Equal(EXT4_SUPER_MAGIC, buf), nil
+	var result struct {
+		Blockdevices []device `json:"blockdevices"`
+	}
+
+	if err := json.Unmarshal(output, &result); err != nil {
+		return false, fmt.Errorf("parsing block devices failed: %v", err)
+	}
+
+	if len(result.Blockdevices) < 1 {
+		return false, fmt.Errorf("device %s not found", dev)
+	}
+
+	d := result.Blockdevices[0]
+
+	if d.FSType == "ext4" {
+		return true, nil
+	}
+
+	if d.Children != nil {
+		return false, fmt.Errorf("device %s has a partition table", dev)
+	} else if d.FSType != "" {
+		return false, fmt.Errorf("device %s has a %s filesystem", dev, d.FSType)
+	}
+
+	return false, nil
 }
 
 func (d *CinderDriver) Path(logger *logrus.Entry, req VolumePathReq) VolumePathResp {
