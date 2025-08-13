@@ -141,7 +141,7 @@ func main() {
 	}
 
 	logrus.Info("Start serving on UNIX socket...")
-	if err := h.ServeUnix("cinder", 0); err != nil {
+	if err := h.ServeUnix("cinder", os.Getgid()); err != nil {
 		panic(err)
 	}
 }
